@@ -3,10 +3,11 @@ package com.newrelic.instrumentation.labs.was.pmi;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Set;
-import java.util.StringTokenizer;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -48,8 +49,8 @@ public class PMISampler implements Runnable,AgentConfigListener {
 	private static final String NAMEFILTER_LIST = "PMI.namefilter";
 	private static final String DEBUG_MODE = "PMI.debug";
 	private static final String MANAGED = "ManagedProcess";
-	private ArrayList<String> filters = null;
-	private ArrayList<String> namefilters = null;
+	private List<String> filters = null;
+	private List<String> namefilters = null;
 	private AdminClient ac = null;
 	private AdminService as = null;
 	private boolean initialized = false;
@@ -59,7 +60,7 @@ public class PMISampler implements Runnable,AgentConfigListener {
 	public static void StartInstance() {
 		if(instance == null) {
 			instance = new PMISampler();
-			ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+			ScheduledExecutorService executorService = Executors.newScheduledThreadPool(3);
 			executorService.scheduleAtFixedRate(instance, 2, 1, TimeUnit.MINUTES);
 			ServiceFactory.getConfigService().addIAgentConfigListener(instance);
 		}
@@ -381,7 +382,7 @@ public class PMISampler implements Runnable,AgentConfigListener {
 							}
 						}
 					} catch (Exception e) {
-						e.printStackTrace();
+						logger.log(Level.FINER, e, "PMICollector failed while getting stats");
 						return;
 					} 
 				} else {
@@ -415,14 +416,13 @@ public class PMISampler implements Runnable,AgentConfigListener {
 				}
 				
 				logger.log(Level.FINEST,"Stats array has {0} elements",wsStats.length);
-				for (int j = 0; j < wsStats.length; j++) {
-					WSStats wsStat = wsStats[j];
-					logger.log(Level.FINE, "Processing WSStat #{0}: {1}", j,wsStat.getName());
+				for (WSStats wsStat : wsStats) {
+					logger.log(Level.FINEST, "Processing WSStat: {0}", wsStat.getName());
 					processStat(pmiStat,wsStat);
 				}
 
 			} else {
-				logger.log(Level.FINE, "MBean {0} is not of type Perf, type: {1}", perf,type);
+				logger.log(Level.FINER, "MBean {0} is not of type Perf, type: {1}", perf,type);
 			}
 			
 		}
@@ -457,8 +457,25 @@ public class PMISampler implements Runnable,AgentConfigListener {
 	private void processStat(PMIStat pmiStat,WSStats wsStat) {
 		if(debug) {
 			HashMap<String,Object> eventMap = new HashMap<String, Object>();
-			eventMap.put("PmiStat", pmiStat);
-			eventMap.put("WSStat", wsStat);
+			
+			eventMap.put("PmiStat-Process", pmiStat.process);
+			eventMap.put("PmiStat-Node", pmiStat.node);
+			eventMap.put("PmiStat-Cell", pmiStat.cell);
+			ArrayList<WSStats> parentStats = pmiStat.parentStats;
+			if (!parentStats.isEmpty()) {
+				List<String> parents = new ArrayList<String>();
+				for (WSStats parentStat : parentStats) {
+					parents.add(parentStat.getName());
+				}
+				eventMap.put("PmiStat-Parents", parents.toString());
+			}
+			eventMap.put("WSStat-Name", wsStat.getName());
+			eventMap.put("WSStat-Type", wsStat.getStatsType());
+			String[] statsNames = wsStat.getStatisticNames();
+			if(statsNames != null && statsNames.length > 0) {
+				eventMap.put("WSStat-StatisticNames", Arrays.toString(statsNames));
+			}
+			
 			NewRelic.getAgent().getInsights().recordCustomEvent("ProcessStat", eventMap);
 		}
 		Logger logger = NewRelic.getAgent().getLogger();
@@ -709,14 +726,8 @@ public class PMISampler implements Runnable,AgentConfigListener {
 		if(val != null) {
 			String value = val.toString();
 			if(!value.isEmpty()) {
-				StringTokenizer st = new StringTokenizer(value, ",");
-				filters = new ArrayList<String>();
-				while(st.hasMoreTokens()) {
-					String token = st.nextToken();
-					if(token != null && !token.isEmpty()) {
-						filters.add(token);
-					}
-				}
+				String[] splits = value.split(",");
+				filters = Arrays.asList(splits);
 				NewRelic.getAgent().getLogger().log(Level.INFO, "PMI Filter set to {0}", filters);
 			} else {
 				filters = null;
@@ -730,14 +741,8 @@ public class PMISampler implements Runnable,AgentConfigListener {
 		if(val != null) {
 			String value = val.toString();
 			if(!value.isEmpty()) {
-				StringTokenizer st = new StringTokenizer(value, ",");
-				namefilters = new ArrayList<String>();
-				while(st.hasMoreTokens()) {
-					String token = st.nextToken();
-					if(token != null && !token.isEmpty()) {
-						namefilters.add(token);
-					}
-				}
+				String[] splits = value.split(",");
+				namefilters = Arrays.asList(splits);
 				NewRelic.getAgent().getLogger().log(Level.INFO, "PMI Name Filter set to {0}", namefilters);
 			} else {
 				namefilters = null;
