@@ -23,7 +23,7 @@ Provides instrumentation that reports PMI data from WebSphere as metrics and/or 
 
 ## Installation
 
-This use this instrumentation.
+To use this instrumentation.
 1. Download the latest release.
 2. Edit newrelic.yml and disable websphere-jmx-7 instrumentation module in the agent (see below).   
 3. In the New Relic Java Agent directory (directory containing newrelic.jar), create a directory named extensions if it doe not already exist. 
