@@ -48,6 +48,7 @@ This use this instrumentation.
 3. Add the following lines after the above to disable websphere-jmx-7    
 &nbsp;&nbsp;&nbsp;&nbsp;com.newrelic.instrumentation.websphere-jmx-7:   
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;enabled: false   
+4. Save newrelic.yml   
    
 ## Getting Started
     
