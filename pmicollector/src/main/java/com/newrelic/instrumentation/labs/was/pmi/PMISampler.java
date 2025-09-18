@@ -689,9 +689,7 @@ public class PMISampler implements Runnable,AgentConfigListener {
 				NewRelic.getAgent().getLogger().log(Level.FINE, "Found value for PMI Metrics but it is of type Boolean or String it is of type {0}", val.getClass().getName());
 			}
 		} else {
-			if(!collect) {
 				sendToMetrics = false;
-			}
 		}
 		NewRelic.getAgent().getLogger().log(Level.INFO, "PMI SendMetrics set to {0}", sendToMetrics);
 
@@ -705,7 +703,7 @@ public class PMISampler implements Runnable,AgentConfigListener {
 				NewRelic.getAgent().getLogger().log(Level.FINE, "Found value for PMI Events Enable but it is of type Boolean or String it is of type {0}", val.getClass().getName());
 			}
 		} else {
-			if(sendToEvents) {
+			if(!collect) {
 				sendToEvents = false;
 			}
 		}
