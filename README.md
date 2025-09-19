@@ -90,6 +90,7 @@ If custom events are enabled the following custom events are created and sent to
 | ProcessStat | Reports info related to values used to name the metric |
 
 ## Building
+**In order to compile and create an update extension jar you need to have access to a WebSphere instance to get jars that are needed to compile.**   
 
 If you make changes to the instrumentation code and need to build the instrumentation jars, follow these steps
 1. Set environment variable NEW_RELIC_EXTENSIONS_DIR.  Its value should be the directory where you want to build the jars (i.e. the extensions directory of the Java Agent).
